@@ -88,7 +88,7 @@
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processing...';
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/test-api-withdraw`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/super-api-withdraw`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
