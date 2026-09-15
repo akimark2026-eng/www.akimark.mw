@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Account — Akimark Admin</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --bg-base: #0B0F19;
+            --bg-surface: #111827;
+            --bg-input: #1F2937;
+            --bg-input-hover: #374151;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border-color: #1F2937;
+            --border-focus: #374151;
+            --accent-primary: #E11D48;
+            --accent-hover: #BE123C;
+            --accent-glow: rgba(225, 29, 72, 0.2);
+            --radius-md: 6px;
+            --radius-lg: 10px;
+            --green-success: #22C55E;
+            --sidebar-width: 250px;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            font-size: 0.85rem;
+        }
+
+        /* Header */
+        .admin-header {
+            background: #000;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .admin-header-left { display: flex; align-items: center; gap: 12px; }
+        .hamburger-btn {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 1.3rem; cursor: pointer; padding: 4px;
+            border-radius: 6px;
+        }
+        .hamburger-btn:hover { color: var(--text-main); background: rgba(255,255,255,0.1); }
+        .admin-logo img { height: 30px; width: auto; border-radius: 4px; }
+        .admin-name { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
+
+        /* Sidebar */
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            z-index: 1001; display: none; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .sidebar-overlay.visible { display: block; opacity: 1; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; height: 100%; width: var(--sidebar-width);
+            background: #000; border-right: 1px solid var(--border-color);
+            z-index: 1002; transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 20px 16px; display: flex; flex-direction: column;
+        }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);
+        }
+        .sidebar-header span { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+        .close-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; cursor: pointer; }
+        .close-btn:hover { color: var(--text-main); }
+        .sidebar-links { list-style: none; padding: 0; margin: 0; flex: 1; }
+        .sidebar-links li { margin-bottom: 4px; }
+        .sidebar-links a {
+            display: flex; align-items: center; gap: 10px; color: var(--text-muted);
+            text-decoration: none; padding: 10px 12px; border-radius: var(--radius-md);
+            font-weight: 500; font-size: 0.8rem; transition: var(--transition-smooth);
+        }
+        .sidebar-links a:hover { background: var(--bg-input); color: var(--text-main); }
+        .sidebar-links a.active {
+            background: rgba(225, 29, 72, 0.1); color: var(--accent-primary); position: relative;
+        }
+        .sidebar-links a.active::before {
+            content: ''; position: absolute; left: 0; top: 20%; height: 60%;
+            width: 4px; background: var(--accent-primary); border-radius: 0 4px 4px 0;
+        }
+
+        /* Main Content */
+        .main-content { max-width: 850px; margin: 20px auto; padding: 0 16px; }
+        .account-card {
+            background: var(--bg-surface); border-radius: var(--radius-lg);
+            padding: 20px; border: 1px solid var(--border-color);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2); margin-bottom: 16px;
+        }
+        .account-card h2 {
+            font-size: 1.1rem; font-weight: 700; color: var(--text-main);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+        }
+        .account-card h2 i {
+            color: var(--accent-primary); background: rgba(225, 29, 72, 0.1);
+            padding: 6px; border-radius: 8px; font-size: 1rem;
+        }
+
+        .profile-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid var(--border-color);
+        }
+        .profile-row:last-child { border-bottom: none; }
+        .profile-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+        .profile-value { font-size: 0.9rem; color: var(--text-main); font-weight: 500; }
+
+        .form-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .form-control {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); color: var(--text-main);
+            padding: 10px 12px; font-size: 0.9rem;
+        }
+        .form-control:focus {
+            background: var(--bg-surface); border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px var(--accent-glow); color: var(--text-main);
+        }
+
+        .btn-primary-custom {
+            background: var(--accent-primary); border: none; color: #fff;
+            padding: 10px 20px; border-radius: var(--radius-md);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+        }
+        .btn-primary-custom:hover { background: var(--accent-hover); }
+        .btn-primary-custom:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-secondary-custom {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            color: var(--text-main); padding: 10px 20px; border-radius: var(--radius-md);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer;
+        }
+        .btn-secondary-custom:hover { background: var(--bg-input-hover); }
+
+        .btn-danger-custom {
+            background: transparent; border: 1px solid var(--accent-primary);
+            color: var(--accent-primary); padding: 10px 20px; border-radius: var(--radius-md);
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; width: 100%;
+        }
+        .btn-danger-custom:hover { background: var(--accent-primary); color: #fff; }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+        .custom-toast {
+            background: var(--bg-surface); border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg); padding: 12px 16px;
+            display: flex; align-items: flex-start; gap: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            animation: slideInRight 0.4s ease; min-width: 250px;
+        }
+        .custom-toast.success { border-left: 4px solid var(--green-success); }
+        .custom-toast.error { border-left: 4px solid var(--accent-primary); }
+        .custom-toast .toast-icon { font-size: 1.3rem; }
+        .custom-toast.success .toast-icon { color: var(--green-success); }
+        .custom-toast.error .toast-icon { color: var(--accent-primary); }
+        .custom-toast .toast-title { font-weight: 600; font-size: 0.9rem; }
+        .custom-toast .toast-msg { font-size: 0.8rem; color: var(--text-muted); }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        .badge-status {
+            display: inline-block; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+        }
+        .badge-status.ok { background: rgba(34,197,94,0.15); color: var(--green-success); }
+        .badge-status.no { background: rgba(225,29,72,0.15); color: var(--accent-primary); }
+
+        @media (max-width: 768px) {
+            .main-content { margin: 16px auto; padding: 0 12px; }
+            .account-card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Header -->
+    <header class="admin-header">
+        <div class="admin-header-left">
+            <button class="hamburger-btn" id="hamburgerBtn"><i class="bi bi-list"></i></button>
+            <div class="admin-logo">
+                <img src="../images/logo-akimark.png" onerror="this.style.display='none'; document.getElementById('logoText').style.display='block';" alt="Akimark">
+                <span id="logoText" style="display:none; font-weight:800; font-size:0.85rem;">Aki<span style="color:var(--accent-primary)">MARK</span></span>
+            </div>
+        </div>
+        <span id="adminNameBadge" class="admin-name">Hi, Admin</span>
+    </header>
+
+    <!-- Sidebar -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>Main Menu</span>
+            <button class="close-btn" id="closeSidebar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <ul class="sidebar-links">
+            <li><a href="admin-dashboard.html"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a></li>
+            <li><a href="admin-manage.html"><i class="bi bi-cloud-arrow-up-fill"></i> Upload Film</a></li>
+            <li><a href="admin-account.html" class="active"><i class="bi bi-gear-fill"></i> Settings</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Profile Card -->
+        <div class="account-card">
+            <h2><i class="bi bi-person-fill"></i> Profile</h2>
+            <div class="profile-row">
+                <span class="profile-label">Full Name</span>
+                <span class="profile-value" id="profileName">—</span>
+            </div>
+            <div class="profile-row">
+                <span class="profile-label">Email</span>
+                <span class="profile-value" id="profileEmail">—</span>
+            </div>
+            <div class="profile-row">
+                <span class="profile-label">Wallet Balance</span>
+                <span class="profile-value" id="profileWallet" style="color:var(--green-success);font-weight:700;">MWK 0.00</span>
+            </div>
+            <div class="profile-row">
+                <span class="profile-label">Total Earnings</span>
+                <span class="profile-value" id="profileEarnings">MWK 0.00</span>
+            </div>
+            <div class="profile-row">
+                <span class="profile-label">PIN Status</span>
+                <span id="pinStatus" class="badge-status no">Not Set</span>
+            </div>
+        </div>
+
+        <!-- PIN Card -->
+        <div class="account-card" id="pinCard">
+            <h2><i class="bi bi-shield-lock-fill"></i> Security PIN</h2>
+
+            <!-- SET PIN (shown when no pin) -->
+            <div id="setPinForm" style="display:none;">
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">
+                    Set a 4-6 digit PIN to secure your account.
+                </p>
+                <label class="form-label">New PIN</label>
+                <input type="password" class="form-control mb-3" id="setPinInput" placeholder="Enter 4-6 digits" maxlength="6" inputmode="numeric">
+                <label class="form-label">Confirm PIN</label>
+                <input type="password" class="form-control mb-3" id="setPinConfirm" placeholder="Confirm PIN" maxlength="6" inputmode="numeric">
+                <button class="btn-primary-custom w-100" id="setPinBtn">
+                    <i class="bi bi-lock-fill"></i> Set PIN
+                </button>
+            </div>
+
+            <!-- CHANGE PIN (shown when pin exists) -->
+            <div id="changePinForm" style="display:none;">
+                <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">
+                    Enter your old PIN and choose a new one.
+                </p>
+                <label class="form-label">Old PIN</label>
+                <input type="password" class="form-control mb-3" id="oldPinInput" placeholder="Enter current PIN" maxlength="6" inputmode="numeric">
+                <label class="form-label">New PIN</label>
+                <input type="password" class="form-control mb-3" id="newPinInput" placeholder="Enter new PIN" maxlength="6" inputmode="numeric">
+                <label class="form-label">Confirm New PIN</label>
+                <input type="password" class="form-control mb-3" id="confirmNewPinInput" placeholder="Confirm new PIN" maxlength="6" inputmode="numeric">
+                <button class="btn-primary-custom w-100" id="changePinBtn">
+                    <i class="bi bi-arrow-repeat"></i> Change PIN
+                </button>
+            </div>
+        </div>
+
+        <!-- Logout Card -->
+        <div class="account-card">
+            <h2><i class="bi bi-box-arrow-right"></i> Session</h2>
+            <button class="btn-danger-custom" id="logoutBtn">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../javascript.js/supabase.js"></script>
+    <script src="admin-account.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var openBtn = document.getElementById('hamburgerBtn');
+            var closeBtn = document.getElementById('closeSidebar');
+            function toggleSidebar() {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('visible');
+            }
+            openBtn.addEventListener('click', toggleSidebar);
+            closeBtn.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
+</body>
+</html>
