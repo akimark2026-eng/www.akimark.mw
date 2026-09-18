@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+<title>Akimark — System Upgrade in Progress</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0a0a0f" />
+
+<style>
+/* ============================================================
+   ROOT / RESET
+============================================================ */
+:root{
+  --bg-0:#07070c;
+  --bg-1:#0d0d17;
+  --bg-2:#13131f;
+  --accent:#E11D48;
+  --accent-2:#8B5CF6;
+  --accent-3:#06B6D4;
+  --text:#F5F5F7;
+  --text-dim:#A1A1AA;
+  --text-faint:#52525B;
+  --glass:rgba(255,255,255,0.045);
+  --glass-brd:rgba(255,255,255,0.09);
+  --shadow:0 30px 90px rgba(0,0,0,0.65);
+  --font: "Inter","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+
+*,
+*::before,
+*::after{ box-sizing:border-box; }
+html,body{
+  margin:0; padding:0;
+  height:100%;
+  background:var(--bg-0);
+  color:var(--text);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  overscroll-behavior:none;
+}
+button{ font-family:inherit; cursor:pointer; }
+a{ color:inherit; }
+
+/* ============================================================
+   BACKGROUND LAYERS
+============================================================ */
+.bg-base{
+  position:fixed; inset:0; z-index:-5;
+  background:
+    radial-gradient(1200px 800px at 12% 8%, rgba(139,92,246,0.22), transparent 60%),
+    radial-gradient(1000px 700px at 88% 92%, rgba(225,29,72,0.20), transparent 60%),
+    radial-gradient(900px 600px at 50% 50%, rgba(6,182,212,0.10), transparent 65%),
+    linear-gradient(180deg,var(--bg-0),var(--bg-1) 55%,var(--bg-0));
+}
+
+.bg-grid{
+  position:fixed; inset:0; z-index:-4;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at 50% 40%, black 30%, transparent 78%);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 40%, black 30%, transparent 78%);
+  animation:gridDrift 45s linear infinite;
+}
+@keyframes gridDrift{
+  from{ background-position:0 0, 0 0; }
+  to  { background-position:60px 60px, 60px 60px; }
+}
+
+.bg-noise{
+  position:fixed; inset:0; z-index:-3; opacity:.35;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  mix-blend-mode:overlay;
+  pointer-events:none;
+}
+
+/* Floating orbs */
+.orb{
+  position:fixed; z-index:-2; border-radius:50%;
+  filter:blur(70px); opacity:.55; pointer-events:none;
+  will-change:transform;
+}
+.orb.a{ width:420px; height:420px; left:-120px; top:-140px;
+  background:radial-gradient(circle at 30% 30%, #8B5CF6, transparent 70%);
+  animation:floatA 22s ease-in-out infinite; }
+.orb.b{ width:500px; height:500px; right:-160px; bottom:-180px;
+  background:radial-gradient(circle at 70% 70%, #E11D48, transparent 70%);
+  animation:floatB 26s ease-in-out infinite; }
+.orb.c{ width:340px; height:340px; left:55%; top:58%;
+  background:radial-gradient(circle at 50% 50%, #06B6D4, transparent 70%);
+  animation:floatC 30s ease-in-out infinite; }
+@keyframes floatA{
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%    { transform:translate(60px,80px) scale(1.08); }
+}
+@keyframes floatB{
+  0%,100%{ transform:translate(0,0) scale(1); }
+  50%    { transform:translate(-70px,-60px) scale(1.1); }
+}
+@keyframes floatC{
+  0%,100%{ transform:translate(-40px,20px) scale(1); }
+  50%    { transform:translate(60px,-80px) scale(0.92); }
+}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+.wrap{
+  min-height:100svh;
+  display:flex; align-items:center; justify-content:center;
+  padding:32px 20px;
+  position:relative;
+}
+
+/* ============================================================
+   CARD
+============================================================ */
+.card{
+  position:relative;
+  width:100%; max-width:720px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.02));
+  border:1px solid var(--glass-brd);
+  border-radius:26px;
+  padding:48px 44px 40px;
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+  box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow:hidden;
+  animation:cardIn .9s cubic-bezier(.22,.9,.28,1) both;
+}
+@keyframes cardIn{
+  from{ opacity:0; transform:translateY(24px) scale(.98); }
+  to  { opacity:1; transform:none; }
+}
+
+/* Neon border sweep */
+.card::before{
+  content:"";
+  position:absolute; inset:-1px;
+  border-radius:26px;
+  padding:1px;
+  background:conic-gradient(from var(--ang,0deg),
+    transparent 0deg,
+    rgba(139,92,246,.75) 60deg,
+    rgba(225,29,72,.75) 120deg,
+    rgba(6,182,212,.75) 200deg,
+    transparent 300deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+          mask-composite:exclude;
+  animation:rotateAng 8s linear infinite;
+  opacity:.7; pointer-events:none;
+}
+@property --ang{ syntax:"<angle>"; initial-value:0deg; inherits:false; }
+@keyframes rotateAng{ to{ --ang:360deg; } }
+
+/* Subtle top glow */
+.card::after{
+  content:"";
+  position:absolute; left:50%; top:-60%;
+  width:70%; height:70%;
+  transform:translateX(-50%);
+  background:radial-gradient(closest-side, rgba(225,29,72,.22), transparent 70%);
+  filter:blur(30px);
+  pointer-events:none;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+.brand{
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:28px;
+  position:relative; z-index:1;
+}
+.brand .dot{
+  width:10px; height:10px; border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 4px rgba(225,29,72,.15), 0 0 18px rgba(225,29,72,.9);
+  animation:pulseDot 1.8s ease-in-out infinite;
+}
+@keyframes pulseDot{
+  0%,100%{ transform:scale(1); opacity:1; }
+  50%    { transform:scale(1.25); opacity:.75; }
+}
+.brand .name{
+  font-size:14px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--text-dim); font-weight:600;
+}
+
+/* Badge */
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:7px 14px; border-radius:100px;
+  background:rgba(225,29,72,.10);
+  border:1px solid rgba(225,29,72,.35);
+  color:#FDA4AF; font-size:12.5px; font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase;
+  margin-bottom:20px; position:relative; z-index:1;
+}
+.badge .ping{
+  width:7px; height:7px; border-radius:50%;
+  background:#F43F5E; position:relative;
+}
+.badge .ping::after{
+  content:""; position:absolute; inset:-3px;
+  border-radius:50%; background:#F43F5E; opacity:.5;
+  animation:ping 1.6s cubic-bezier(0,0,.2,1) infinite;
+}
+@keyframes ping{
+  0%{ transform:scale(.6); opacity:.8; }
+  100%{ transform:scale(2.4); opacity:0; }
+}
+
+/* Title */
+.title{
+  font-size:clamp(28px, 4.6vw, 44px);
+  line-height:1.08;
+  font-weight:800;
+  letter-spacing:-0.02em;
+  margin:0 0 14px;
+  background:linear-gradient(120deg,#fff 10%,#C7D2FE 45%,#FDA4AF 80%);
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent;
+  position:relative; z-index:1;
+}
+.subtitle{
+  font-size:15.5px; line-height:1.65;
+  color:var(--text-dim);
+  margin:0 0 32px; max-width:56ch;
+  position:relative; z-index:1;
+}
+
+/* ============================================================
+   ETA / TIMER
+============================================================ */
+.eta{
+  display:flex; align-items:flex-end; gap:26px;
+  flex-wrap:wrap;
+  margin-bottom:28px;
+  position:relative; z-index:1;
+}
+.eta-block .label{
+  font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600; margin-bottom:6px;
+}
+.eta-block .value{
+  font-size:26px; font-weight:800; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,#fff,#C7D2FE);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.eta-block .value.mono{
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-size:22px;
+}
+
+/* ============================================================
+   PROGRESS
+============================================================ */
+.progress-section{
+  position:relative; z-index:1;
+  margin-bottom:32px;
+}
+.progress-head{
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:10px;
+}
+.progress-head .phase{
+  font-size:13.5px; color:var(--text-dim); font-weight:500;
+  display:flex; align-items:center; gap:8px;
+  transition:color .3s ease;
+}
+.progress-head .phase .spark{
+  display:inline-block; width:14px; height:14px;
+  border-radius:4px;
+  background:conic-gradient(from 0deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent));
+  animation:spin 2.4s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+.progress-head .percent{
+  font-size:22px; font-weight:800; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(90deg,#fff,#FDA4AF);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.progress-track{
+  position:relative;
+  height:12px; border-radius:100px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.06);
+  overflow:hidden;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.5);
+}
+.progress-fill{
+  position:absolute; left:0; top:0; bottom:0;
+  width:0%;
+  border-radius:100px;
+  background:linear-gradient(90deg,#8B5CF6 0%,#E11D48 55%,#F59E0B 100%);
+  background-size:200% 100%;
+  animation:shine 3s linear infinite;
+  box-shadow:
+    0 0 22px rgba(225,29,72,.55),
+    0 0 40px rgba(139,92,246,.35);
+  transition:width .6s cubic-bezier(.22,.9,.28,1);
+}
+@keyframes shine{
+  from{ background-position:0% 50%; }
+  to  { background-position:200% 50%; }
+}
+.progress-fill::after{
+  content:"";
+  position:absolute; right:0; top:0; bottom:0;
+  width:70px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.5));
+  filter:blur(6px);
+  animation:glowEdge 2s ease-in-out infinite;
+}
+@keyframes glowEdge{
+  0%,100%{ opacity:.5; }
+  50%    { opacity:1; }
+}
+
+/* Progress sub-line */
+.progress-meta{
+  display:flex; justify-content:space-between;
+  margin-top:10px;
+  font-size:12px; color:var(--text-faint);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============================================================
+   STEPS
+============================================================ */
+.steps{
+  list-style:none; margin:0; padding:0;
+  position:relative; z-index:1;
+  border-top:1px solid rgba(255,255,255,0.06);
+  padding-top:24px;
+  margin-bottom:28px;
+}
+.steps li{
+  display:flex; align-items:center; gap:12px;
+  padding:9px 0;
+  color:var(--text-faint);
+  font-size:14px;
+  transition:color .4s ease, transform .4s ease;
+}
+.steps li.active{
+  color:var(--text);
+  transform:translateX(3px);
+}
+.steps li.done{
+  color:var(--text-dim);
+}
+.steps li .bullet{
+  width:22px; height:22px; flex-shrink:0;
+  border-radius:50%;
+  display:grid; place-items:center;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.10);
+  font-size:11px; font-weight:700;
+  transition:all .35s ease;
+}
+.steps li.active .bullet{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border-color:transparent;
+  color:#fff;
+  box-shadow:0 0 0 4px rgba(225,29,72,.16), 0 0 18px rgba(225,29,72,.55);
+  animation:pulseDot 1.6s ease-in-out infinite;
+}
+.steps li.done .bullet{
+  background:rgba(76,175,80,.18);
+  border-color:rgba(76,175,80,.45);
+  color:#86EFAC;
+}
+.steps li .text{ line-height:1.3; }
+.steps li .hint{
+  margin-left:auto; font-size:11.5px;
+  color:var(--text-faint);
+  font-variant-numeric:tabular-nums;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.foot{
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:14px;
+  padding-top:24px;
+  border-top:1px solid rgba(255,255,255,0.06);
+  position:relative; z-index:1;
+}
+.foot .note{
+  font-size:12.5px; color:var(--text-faint);
+}
+.foot .btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:11px 20px;
+  border-radius:100px;
+  border:1px solid rgba(255,255,255,0.12);
+  background:rgba(255,255,255,0.045);
+  color:var(--text);
+  font-size:13px; font-weight:600;
+  letter-spacing:.02em;
+  transition:all .25s ease;
+  text-decoration:none;
+}
+.foot .btn:hover{
+  background:rgba(255,255,255,0.09);
+  border-color:rgba(255,255,255,0.22);
+  transform:translateY(-1px);
+}
+.foot .btn.primary{
+  background:linear-gradient(135deg,var(--accent),#BE123C);
+  border-color:transparent;
+  box-shadow:0 10px 30px rgba(225,29,72,.35);
+}
+.foot .btn.primary:hover{
+  box-shadow:0 14px 40px rgba(225,29,72,.5);
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width:640px){
+  .card{ padding:36px 26px 30px; border-radius:22px; }
+  .eta{ gap:20px; }
+  .eta-block .value{ font-size:22px; }
+  .eta-block .value.mono{ font-size:19px; }
+  .steps li{ font-size:13.2px; }
+  .progress-head .percent{ font-size:19px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:0.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.001ms !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== BACKGROUND ===== -->
+<div class="bg-base"></div>
+<div class="bg-grid"></div>
+<div class="bg-noise"></div>
+<div class="orb a"></div>
+<div class="orb b"></div>
+<div class="orb c"></div>
+
+<!-- ===== CONTENT ===== -->
+<main class="wrap">
+  <section class="card" role="status" aria-live="polite">
+
+    <!-- Brand -->
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="name">Akimark</span>
+    </div>
+
+    <!-- Status badge -->
+    <div class="badge">
+      <span class="ping"></span>
+      System Upgrade in Progress
+    </div>
+
+    <!-- Heading -->
+    <h1 class="title">We're making things<br/>faster &amp; better.</h1>
+    <p class="subtitle">
+      Our engineers are deploying a major upgrade to Akimark — new performance
+      engine, enhanced security, and a smoother experience. We'll be back shortly.
+    </p>
+
+    <!-- ETA block -->
+    <div class="eta">
+      <div class="eta-block">
+        <div class="label">Time Remaining</div>
+        <div class="value mono" id="countdown">--:--:--</div>
+      </div>
+      <div class="eta-block">
+        <div class="label">Estimated Complete</div>
+        <div class="value" id="etaClock">--:--</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-head">
+        <div class="phase" id="phaseLabel">
+          <span class="spark"></span>
+          <span id="phaseText">Initializing upgrade…</span>
+        </div>
+        <div class="percent" id="percentLabel">0%</div>
+      </div>
+
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="progress-meta">
+        <span>Deployment progress</span>
+        <span id="elapsedLabel">Elapsed: 00:00:00</span>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <ul class="steps" id="steps">
+      <li data-step="0">
+        <span class="bullet">1</span>
+        <span class="text">Initializing upgrade environment</span>
+      </li>
+      <li data-step="1">
+        <span class="bullet">2</span>
+        <span class="text">Applying database migrations</span>
+      </li>
+      <li data-step="2">
+        <span class="bullet">3</span>
+        <span class="text">Deploying new API &amp; edge functions</span>
+      </li>
+      <li data-step="3">
+        <span class="bullet">4</span>
+        <span class="text">Optimizing media pipeline &amp; security</span>
+      </li>
+      <li data-step="4">
+        <span class="bullet">5</span>
+        <span class="text">Running final health checks</span>
+      </li>
+    </ul>
+
+    <!-- Footer -->
+    <div class="foot">
+      <div class="note">
+        Follow <strong style="color:#C7D2FE">@akimark</strong> for live updates.
+      </div>
+      <div style="display:flex; gap:10px;">
+        <a class="btn" href="javascript:location.reload()">↻ Refresh</a>
+        <a class="btn primary" href="https://wa.me/265000000000" target="_blank" rel="noopener">Contact Support</a>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- ===== SCRIPT ===== -->
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours
+  const STORAGE_KEY = 'akimark_maintenance_started_at';
+
+  // When the maintenance started (persisted across refreshes).
+  // If none exists, we set it now.
+  let startedAt = Number(localStorage.getItem(STORAGE_KEY));
+  if (!startedAt || isNaN(startedAt) || startedAt > Date.now()) {
+    startedAt = Date.now();
+    localStorage.setItem(STORAGE_KEY, String(startedAt));
+  }
+
+  const endsAt = startedAt + DURATION_MS;
+
+  // ============================================================
+  // DOM
+  // ============================================================
+  const $countdown    = document.getElementById('countdown');
+  const $etaClock     = document.getElementById('etaClock');
+  const $progressFill = document.getElementById('progressFill');
+  const $percentLabel = document.getElementById('percentLabel');
+  const $phaseText    = document.getElementById('phaseText');
+  const $elapsedLabel = document.getElementById('elapsedLabel');
+  const $steps        = Array.from(document.querySelectorAll('#steps li'));
+
+  // ============================================================
+  // PHASES  (each phase = 20% of the timeline)
+  // ============================================================
+  const PHASES = [
+    { upto: 20, text: 'Initializing upgrade environment…' },
+    { upto: 40, text: 'Applying database migrations…' },
+    { upto: 60, text: 'Deploying new API & edge functions…' },
+    { upto: 80, text: 'Optimizing media pipeline & security…' },
+    { upto: 100, text: 'Running final health checks…' },
+  ];
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function fmtClock(ms) {
+    if (ms < 0) ms = 0;
+    const total = Math.floor(ms / 1000);
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  function fmtHHMM(date) {
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function clamp(n, min, max) {
+    return Math.max(min, Math.min(max, n));
+  }
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function render() {
+    const now = Date.now();
+    const elapsed  = clamp(now - startedAt, 0, DURATION_MS);
+    const remaining = Math.max(0, endsAt - now);
+
+    // --- countdown + ETA ---
+    $countdown.textContent = fmtClock(remaining);
+    $etaClock.textContent  = fmtHHMM(new Date(endsAt));
+    $elapsedLabel.textContent = 'Elapsed: ' + fmtClock(elapsed);
+
+    // --- progress % ---
+    const percent = clamp((elapsed / DURATION_MS) * 100, 0, 100);
+    $progressFill.style.width = percent.toFixed(2) + '%';
+    $percentLabel.textContent = Math.floor(percent) + '%';
+
+    // --- phase text + steps ---
+    const idx = PHASES.findIndex(p => percent < p.upto);
+    const activeIdx = idx === -1 ? PHASES.length - 1 : idx;
+    $phaseText.textContent = PHASES[activeIdx].text;
+
+    $steps.forEach((li, i) => {
+      li.classList.toggle('done',   i < activeIdx);
+      li.classList.toggle('active', i === activeIdx);
+
+      // Toggle bullet inner content
+      const bullet = li.querySelector('.bullet');
+      if (i < activeIdx) bullet.textContent = '✓';
+      else bullet.textContent = String(i + 1);
+    });
+
+    // --- finished? ---
+    if (remaining <= 0) {
+      $phaseText.textContent = 'Upgrade complete — reloading…';
+      $countdown.textContent = '00:00:00';
+      $steps.forEach(li => { li.classList.remove('active'); li.classList.add('done'); });
+      $steps.forEach(li => (li.querySelector('.bullet').textContent = '✓'));
+      localStorage.removeItem(STORAGE_KEY);
+      setTimeout(() => location.reload(), 4000);
+    }
+  }
+
+  // ============================================================
+  // LOOP  — tick at 1s for countdown, and update progress smoothly
+  // ============================================================
+  render();                          // immediate paint
+  const timer = setInterval(render, 1000);
+
+  // Smooth sub-second updates for the progress bar (60fps-ish)
+  // Uses rAF but only touches the bar/percent, not the whole DOM.
+  (function smoothProgress() {
+    const now = Date.now();
+    const percent = clamp(((now - startedAt) / DURATION_MS) * 100, 0, 100);
+    $progressFill.style.width = percent.toFixed(3) + '%';
+    $percentLabel.textContent = Math.floor(percent) + '%';
+    if (percent < 100) requestAnimationFrame(smoothProgress);
+    else clearInterval(timer);
+  })();
+
+  // ============================================================
+  // Also update when tab regains focus (browser may throttle bg tabs)
+  // ============================================================
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) render();
+  });
+
+})();
+</script>
+</body>
+</html>
