@@ -1,0 +1,77 @@
+name: Encrypt Video to HLS + AES-128
+
+on:
+  workflow_dispatch:
+    inputs:
+      video_key:
+        description: 'R2 path of MP4 (e.g., uploads/abc.mp4)'
+        required: true
+      output_key:
+        description: 'R2 output folder (e.g., videos/uuid/)'
+        required: true
+
+jobs:
+  encrypt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf << 'EOF'
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${{ secrets.R2_ACCESS_KEY_ID }}
+          secret_access_key = ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          endpoint = https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          acl = private
+          EOF
+
+      - name: Download MP4 from R2
+        run: |
+          rclone copy r2:akimark/${{ inputs.video_key }} ./input/
+
+      - name: Generate AES-128 key
+        id: genkey
+        run: |
+          openssl rand 16 > file.key
+          KEY_HEX=$(xxd -p file.key | tr -d '\n')
+          echo "key_hex=$KEY_HEX" >> $GITHUB_OUTPUT
+          echo "AES key generated (length: ${#KEY_HEX})"
+
+      - name: Generate keyinfo
+        run: |
+          echo "https://akimark.mw/api/player-api/key" > file.keyinfo
+          echo "$PWD/file.key" >> file.keyinfo
+          echo "${{ steps.genkey.outputs.key_hex }}" >> file.keyinfo
+
+      - name: Convert to HLS + AES-128
+        run: |
+          mkdir -p output
+          ffmpeg -i ./input/*.mp4 \
+            -c:v libx264 -profile:v high -level 4.1 -preset veryfast \
+            -crf 22 -g 48 -sc_threshold 0 \
+            -c:a aac -b:a 128k \
+            -hls_time 6 -hls_playlist_type vod \
+            -hls_key_info_file file.keyinfo \
+            -hls_segment_filename ./output/seg_%04d.ts \
+            ./output/playlist.m3u8
+          ls -lh ./output/ | head -20
+
+      - name: Upload HLS to R2
+        run: |
+          rclone copy ./output/ r2:akimark/${{ inputs.output_key }} --progress
+
+      - name: Save key to output
+        run: |
+          echo "VIDEO_KEY: ${{ inputs.output_key }}"
+          echo "AES_KEY_HEX: ${{ steps.genkey.outputs.key_hex }}"
+          echo "Playlist: ${{ inputs.output_key }}playlist.m3u8"
+          echo ""
+          echo "⚠️ Ikani AES_KEY_HEX mu Cloudflare Worker secret KEY_AES128"
