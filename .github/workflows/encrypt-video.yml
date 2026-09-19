@@ -4,11 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       video_key:
-        description: 'R2 path of MP4 (e.g., uploads/abc.mp4)'
+        description: 'R2 path of MP4 (e.g., videos/abc/file.mp4)'
         required: true
       output_key:
-        description: 'R2 output folder (e.g., videos/uuid/)'
+        description: 'R2 output folder (e.g., videos/abc/file_hls/)'
         required: true
+      video_id:
+        description: 'Supabase video UUID (to mark ready)'
+        required: false
+      supabase_url:
+        description: 'Supabase project URL'
+        required: false
 
 jobs:
   encrypt:
@@ -17,8 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install rclone
-        run: |
-          curl https://rclone.org/install.sh | sudo bash
+        run: curl https://rclone.org/install.sh | sudo bash
 
       - name: Configure rclone
         run: |
@@ -34,8 +39,7 @@ jobs:
           EOF
 
       - name: Download MP4 from R2
-        run: |
-          rclone copy r2:akimark/${{ inputs.video_key }} ./input/
+        run: rclone copy "r2:akimark/${{ inputs.video_key }}" ./input/ --progress
 
       - name: Generate AES-128 key
         id: genkey
@@ -54,7 +58,7 @@ jobs:
       - name: Convert to HLS + AES-128
         run: |
           mkdir -p output
-          ffmpeg -i ./input/*.mp4 \
+          ffmpeg -i ./input/* \
             -c:v libx264 -profile:v high -level 4.1 -preset veryfast \
             -crf 22 -g 48 -sc_threshold 0 \
             -c:a aac -b:a 128k \
@@ -65,13 +69,24 @@ jobs:
           ls -lh ./output/ | head -20
 
       - name: Upload HLS to R2
-        run: |
-          rclone copy ./output/ r2:akimark/${{ inputs.output_key }} --progress
+        run: rclone copy ./output/ "r2:akimark/${{ inputs.output_key }}" --progress
 
-      - name: Save key to output
+      - name: Mark video as ready in Supabase
+        if: ${{ inputs.video_id != '' && inputs.supabase_url != '' }}
         run: |
-          echo "VIDEO_KEY: ${{ inputs.output_key }}"
+          curl -X PATCH \
+            "${{ inputs.supabase_url }}/rest/v1/videos?id=eq.${{ inputs.video_id }}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"is_published": true}'
+
+      - name: Print AES key
+        run: |
+          echo "═══════════════════════════════════════════"
+          echo "VIDEO_KEY:   ${{ inputs.output_key }}playlist.m3u8"
           echo "AES_KEY_HEX: ${{ steps.genkey.outputs.key_hex }}"
-          echo "Playlist: ${{ inputs.output_key }}playlist.m3u8"
-          echo ""
+          echo "═══════════════════════════════════════════"
           echo "⚠️ Ikani AES_KEY_HEX mu Cloudflare Worker secret KEY_AES128"
+          echo "⚠️ Ngati muli ndi videos zambiri, gwiritsani ntchito AES key imodzi"
